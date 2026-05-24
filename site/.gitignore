@@ -1,0 +1,8 @@
+# Local/private business data
+.env
+.env.*
+*.local.md
+private/
+exports/
+life-metrics.local.md
+
