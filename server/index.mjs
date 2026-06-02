@@ -13,7 +13,7 @@ const leadWindowMs = 10 * 60 * 1000;
 const maxLeadsPerWindow = 5;
 const requestLog = new Map();
 
-loadLocalEnv(["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "TELEGRAM_THREAD_ID", "LEAD_SOURCE_LABEL"]);
+loadLocalEnv(["N8N_WEBHOOK_URL", "LEAD_SOURCE_LABEL"]);
 
 const server = createServer(async (request, response) => {
   try {
@@ -25,7 +25,7 @@ const server = createServer(async (request, response) => {
     if (request.url === "/api/health") {
       sendJson(response, 200, {
         ok: true,
-        telegramConfigured: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+        n8nConfigured: Boolean(process.env.N8N_WEBHOOK_URL),
       });
       return;
     }
@@ -93,7 +93,7 @@ async function handleLead(request, response) {
     return;
   }
 
-  if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) {
+  if (!process.env.N8N_WEBHOOK_URL) {
     sendJson(response, 503, {
       ok: false,
       message: "Сервер приема заявок пока не настроен. Используйте email, телефон или мессенджер.",
@@ -102,7 +102,7 @@ async function handleLead(request, response) {
     return;
   }
 
-  const result = await sendTelegramMessage(formatLeadMessage(normalized));
+  const result = await sendN8nLead(normalized, request);
 
   if (!result.ok) {
     sendJson(response, 502, {
@@ -163,53 +163,61 @@ function cleanString(value, maxLength) {
   return value.replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
-function formatLeadMessage(lead) {
-  const source = process.env.LEAD_SOURCE_LABEL || "MarineDocs Engineering";
-  return [
-    `Новая заявка с сайта ${source}`,
-    "",
-    `Задача: ${lead.taskType}`,
-    `Имя: ${lead.name || "не указано"}`,
-    `Компания: ${lead.company || "не указано"}`,
-    `Телефон: ${lead.phone || "не указано"}`,
-    `Telegram/WhatsApp: ${lead.messenger || "не указано"}`,
-    `Email: ${lead.email || "не указано"}`,
-    `Тип судна: ${lead.vesselType || "не указано"}`,
-    "",
-    "Комментарий:",
-    lead.comment || "не указано",
-  ].join("\n");
-}
-
-async function sendTelegramMessage(text) {
+async function sendN8nLead(lead, request) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const payload = {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
-      text,
-      disable_web_page_preview: true,
-    };
-
-    if (process.env.TELEGRAM_THREAD_ID) {
-      payload.message_thread_id = process.env.TELEGRAM_THREAD_ID;
-    }
-
-    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(process.env.N8N_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(createLeadPayload(lead, request)),
       signal: controller.signal,
     });
 
+    if (!response.ok) {
+      console.error("n8n webhook failed:", response.status, response.statusText);
+    }
+
     return { ok: response.ok };
   } catch (error) {
-    console.error("Telegram send failed:", error.message);
+    console.error("n8n webhook failed:", error.message);
     return { ok: false };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function createLeadPayload(lead, request) {
+  return {
+    source: process.env.LEAD_SOURCE_LABEL || "MarineDocs Engineering",
+    receivedAt: new Date().toISOString(),
+    pageUrl: getRequestOrigin(request),
+    name: lead.name,
+    company: lead.company,
+    phone: lead.phone,
+    messenger: lead.messenger,
+    email: lead.email,
+    vesselType: lead.vesselType,
+    taskType: lead.taskType,
+    comment: lead.comment,
+    consent: lead.consent,
+    website: lead.website,
+  };
+}
+
+function getRequestOrigin(request) {
+  const protocol = getFirstHeaderValue(request.headers["x-forwarded-proto"]) || "https";
+  const host = getFirstHeaderValue(request.headers["x-forwarded-host"]) || getFirstHeaderValue(request.headers.host) || "";
+  return host ? `${protocol}://${host}` : "";
+}
+
+function getFirstHeaderValue(value) {
+  if (Array.isArray(value)) {
+    return value[0] || "";
+  }
+
+  return value || "";
 }
 
 function readJsonBody(request) {
