@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   FileText,
+  LockKeyhole,
   Mail,
   Menu,
   MessageCircle,
@@ -62,6 +63,13 @@ const initialChecklistForm = {
   email: "",
   vesselType: "",
   comment: "",
+  consent: false,
+  website: "",
+};
+
+const initialCalculatorGateForm = {
+  name: "",
+  phone: "",
   consent: false,
   website: "",
 };
@@ -474,6 +482,7 @@ function Contact({ onOpenPrivacy }) {
 function BudgetCalculator({ onOpenPrivacy }) {
   const [settings, setSettings] = useState(initialBudgetCalculator);
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
+  const [isDetailedOpen, setIsDetailedOpen] = useState(false);
   const totals = useMemo(() => calculateBudgetScenario(settings), [settings]);
   const factors = useMemo(() => getBudgetFactors(settings), [settings]);
   const sliderFill = ((settings.tanks - 1) / 29) * 100;
@@ -556,62 +565,16 @@ function BudgetCalculator({ onOpenPrivacy }) {
               />
             </div>
 
-            <div className="mdc-results" aria-live="polite">
-              <div className="mdc-loss">
-                <span className="mdc-loss-label">Без подготовки вы можете переплатить до</span>
-                <span className="mdc-loss-amount">{formatRubles(totals.savings)}</span>
-              </div>
-
-              <CalculatorResultCard
-                variant="exp"
-                icon={<Calculator size={22} />}
-                label="Стоимость без подготовки"
-                value={formatRubles(totals.expensive)}
+            {isDetailedOpen ? (
+              <BudgetResults totals={totals} factors={factors} onOpenChecklist={() => setIsChecklistOpen(true)} />
+            ) : (
+              <BudgetLeadGate
+                onOpenPrivacy={onOpenPrivacy}
+                onUnlock={() => setIsDetailedOpen(true)}
+                settings={settings}
+                totals={totals}
               />
-              <CalculatorResultCard
-                variant="opt"
-                icon={<CheckCircle2 size={22} />}
-                label="Стоимость при нормальной подготовке"
-                value={formatRubles(totals.optimized)}
-              />
-              <CalculatorResultCard
-                variant="save"
-                icon={<ClipboardCheck size={22} />}
-                label="Потенциальная экономия"
-                value={formatRubles(totals.savings)}
-              />
-
-              <div className="mdc-factors">
-                <div className="mdc-factors-title">Что увеличивает бюджет</div>
-                <ul className="mdc-factors-list">
-                  {factors.map((factor) => (
-                    <li className={factor.risk ? "" : "is-ok"} key={`${factor.text}-${factor.cost || "ok"}`}>
-                      <span>{factor.text}</span>
-                      {factor.cost ? (
-                        <span className={`mdc-factor-cost ${factor.risk ? "" : "is-neutral"}`}>{factor.cost}</span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mdc-recs">
-                <div className="mdc-recs-title">Как снизить стоимость</div>
-                <p className="mdc-recs-intro">Подготовьте заранее:</p>
-                <ul className="mdc-recs-list">
-                  <li>Чертежи судна или объекта</li>
-                  <li>Фото танков / отсеков</li>
-                  <li>Данные по замерным точкам</li>
-                  <li>Доступ к объекту в день работ</li>
-                  <li>Список требуемых документов</li>
-                </ul>
-              </div>
-
-              <button className="mdc-cta" type="button" onClick={() => setIsChecklistOpen(true)}>
-                <ClipboardCheck size={18} />
-                Получить чек-лист для экономии
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </section>
@@ -624,6 +587,239 @@ function BudgetCalculator({ onOpenPrivacy }) {
         totals={totals}
       />
     </>
+  );
+}
+
+function BudgetResults({ totals, factors, onOpenChecklist }) {
+  return (
+    <div className="mdc-results" aria-live="polite">
+      <div className="mdc-unlock-note">
+        <CheckCircle2 size={16} />
+        Детальный расчет открыт. Данные заявки отправлены.
+      </div>
+
+      <div className="mdc-loss">
+        <span className="mdc-loss-label">Без подготовки вы можете переплатить до</span>
+        <span className="mdc-loss-amount">{formatRubles(totals.savings)}</span>
+      </div>
+
+      <CalculatorResultCard
+        variant="exp"
+        icon={<Calculator size={22} />}
+        label="Стоимость без подготовки"
+        value={formatRubles(totals.expensive)}
+      />
+      <CalculatorResultCard
+        variant="opt"
+        icon={<CheckCircle2 size={22} />}
+        label="Стоимость при нормальной подготовке"
+        value={formatRubles(totals.optimized)}
+      />
+      <CalculatorResultCard
+        variant="save"
+        icon={<ClipboardCheck size={22} />}
+        label="Потенциальная экономия"
+        value={formatRubles(totals.savings)}
+      />
+
+      <div className="mdc-factors">
+        <div className="mdc-factors-title">Что увеличивает бюджет</div>
+        <ul className="mdc-factors-list">
+          {factors.map((factor) => (
+            <li className={factor.risk ? "" : "is-ok"} key={`${factor.text}-${factor.cost || "ok"}`}>
+              <span>{factor.text}</span>
+              {factor.cost ? (
+                <span className={`mdc-factor-cost ${factor.risk ? "" : "is-neutral"}`}>{factor.cost}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mdc-recs">
+        <div className="mdc-recs-title">Как снизить стоимость</div>
+        <p className="mdc-recs-intro">Подготовьте заранее:</p>
+        <ul className="mdc-recs-list">
+          <li>Чертежи судна или объекта</li>
+          <li>Фото танков / отсеков</li>
+          <li>Данные по замерным точкам</li>
+          <li>Доступ к объекту в день работ</li>
+          <li>Список требуемых документов</li>
+        </ul>
+      </div>
+
+      <button className="mdc-cta" type="button" onClick={onOpenChecklist}>
+        <ClipboardCheck size={18} />
+        Получить чек-лист для экономии
+      </button>
+    </div>
+  );
+}
+
+function BudgetLeadGate({ onOpenPrivacy, onUnlock, settings, totals }) {
+  const [form, setForm] = useState(initialCalculatorGateForm);
+  const [errors, setErrors] = useState({});
+  const [status, setStatus] = useState(null);
+  const [fallbackHref, setFallbackHref] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function updateField(event) {
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    setErrors((current) => ({ ...current, [name]: false }));
+  }
+
+  async function submitGate(event) {
+    event.preventDefault();
+    setFallbackHref("");
+
+    const nextErrors = {
+      name: !form.name.trim(),
+      phone: !form.phone.trim(),
+      consent: !form.consent,
+    };
+    setErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      setStatus({
+        type: "error",
+        message: "Заполните имя, телефон и согласие на обработку данных.",
+      });
+      return;
+    }
+
+    const lead = {
+      name: form.name,
+      company: "",
+      phone: form.phone,
+      messenger: "",
+      email: "",
+      vesselType: "",
+      taskType: "Открыть детальный расчет калькулятора",
+      comment: createCalculatorGateComment(settings, totals),
+      consent: form.consent,
+      website: form.website,
+    };
+
+    setIsSubmitting(true);
+    setStatus({ type: "pending", message: "Отправляем заявку и открываем расчет." });
+
+    try {
+      const response = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lead),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(result.message || "Не удалось отправить заявку автоматически.");
+      }
+
+      setStatus(null);
+      setForm(initialCalculatorGateForm);
+      setIsSubmitting(false);
+      onUnlock();
+    } catch (error) {
+      setFallbackHref(createLeadMailto(lead));
+      setStatus({
+        type: "error",
+        message: `${error.message} Можно открыть письмо с уже заполненной заявкой.`,
+      });
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="mdc-results mdc-results-locked" aria-live="polite">
+      <div className="mdc-gate">
+        <div className="mdc-gate-icon" aria-hidden="true">
+          <LockKeyhole size={26} />
+        </div>
+        <span className="mdc-gate-kicker">Расчет готов</span>
+        <h3>Откройте детальную смету</h3>
+        <p>
+          Введите имя и телефон. Мы отправим параметры расчета в заявку и покажем суммы, факторы переплаты и
+          рекомендации по подготовке.
+        </p>
+
+        <div className="mdc-gate-preview" aria-label="Закрытые разделы расчета">
+          <span>Стоимость без подготовки</span>
+          <strong>Закрыто</strong>
+          <span>Стоимость при нормальной подготовке</span>
+          <strong>Закрыто</strong>
+          <span>Потенциальная экономия</span>
+          <strong>Закрыто</strong>
+        </div>
+
+        <form className="mdc-gate-form" onSubmit={submitGate} noValidate>
+          <div className="mdc-form-group">
+            <label className="mdc-form-label" htmlFor="calculator-gate-name">
+              Имя
+            </label>
+            <input
+              className={`mdc-form-input ${errors.name ? "is-error" : ""}`}
+              id="calculator-gate-name"
+              name="name"
+              type="text"
+              value={form.name}
+              onChange={updateField}
+              autoComplete="name"
+              maxLength="80"
+              aria-invalid={errors.name || undefined}
+            />
+          </div>
+
+          <div className="mdc-form-group">
+            <label className="mdc-form-label" htmlFor="calculator-gate-phone">
+              Телефон
+            </label>
+            <input
+              className={`mdc-form-input ${errors.phone ? "is-error" : ""}`}
+              id="calculator-gate-phone"
+              name="phone"
+              type="tel"
+              value={form.phone}
+              onChange={updateField}
+              autoComplete="tel"
+              inputMode="tel"
+              maxLength="60"
+              aria-invalid={errors.phone || undefined}
+            />
+          </div>
+
+          <label className="hidden-field" aria-hidden="true">
+            <span>Сайт</span>
+            <input name="website" value={form.website} onChange={updateField} tabIndex={-1} autoComplete="off" />
+          </label>
+
+          <label className={`mdc-consent ${errors.consent ? "is-error" : ""}`}>
+            <input name="consent" type="checkbox" checked={form.consent} onChange={updateField} />
+            <span>
+              Согласен на обработку персональных данных и принимаю{" "}
+              <button type="button" onClick={onOpenPrivacy}>
+                политику конфиденциальности
+              </button>
+            </span>
+          </label>
+
+          <button className="mdc-form-submit" type="submit" disabled={isSubmitting}>
+            <Send size={18} />
+            {isSubmitting ? "Отправляем" : "Открыть детальный расчет"}
+          </button>
+
+          {status ? (
+            <div className={`form-status form-status-${status.type}`} role={status.type === "error" ? "alert" : "status"}>
+              <p>{status.message}</p>
+              {fallbackHref ? <a href={fallbackHref}>Открыть письмо</a> : null}
+            </div>
+          ) : null}
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -1173,10 +1369,29 @@ function isEmailValid(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
+function createCalculatorGateComment(settings, totals) {
+  return [
+    "Запрос детального расчета из калькулятора.",
+    "",
+    ...createBudgetScenarioLines(settings, totals),
+  ].join("\n");
+}
+
 function createChecklistComment(form, settings, totals) {
   const lines = [
     "Запрос чек-листа для экономии бюджета.",
     "",
+    ...createBudgetScenarioLines(settings, totals),
+    "",
+    "Комментарий:",
+    form.comment || "не указан",
+  ];
+
+  return lines.join("\n");
+}
+
+function createBudgetScenarioLines(settings, totals) {
+  return [
     "Параметры калькулятора:",
     `Количество танков / отсеков: ${settings.tanks}`,
     `Исходные данные: ${budgetCalculatorModel.dataQuality[settings.dataQuality].label}`,
@@ -1189,12 +1404,7 @@ function createChecklistComment(form, settings, totals) {
     `Стоимость без подготовки: ${formatRubles(totals.expensive)}`,
     `Стоимость при нормальной подготовке: ${formatRubles(totals.optimized)}`,
     `Потенциальная экономия: ${formatRubles(totals.savings)}`,
-    "",
-    "Комментарий:",
-    form.comment || "не указан",
   ];
-
-  return lines.join("\n");
 }
 
 function Footer({ onOpenPrivacy }) {

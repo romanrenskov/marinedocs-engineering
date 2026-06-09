@@ -1012,7 +1012,9 @@ textarea:focus {
 .mdc-card,
 .mdc-factors,
 .mdc-recs,
-.mdc-loss {
+.mdc-loss,
+.mdc-gate,
+.mdc-unlock-note {
   border-radius: var(--radius);
 }
 
@@ -1165,9 +1167,103 @@ textarea:focus {
 .mdc-cta:focus-visible,
 .mdc-modal-close:focus-visible,
 .mdc-form-submit:focus-visible,
-.mdc-success-btn:focus-visible {
+.mdc-success-btn:focus-visible,
+.mdc-consent button:focus-visible {
   outline: 2px solid var(--cyan-400);
   outline-offset: 2px;
+}
+
+.mdc-results-locked {
+  gap: 0;
+}
+
+.mdc-gate {
+  padding: 24px;
+  border: 1px solid rgba(93, 232, 240, 0.28);
+  background:
+    linear-gradient(145deg, rgba(26, 213, 229, 0.12), rgba(255, 255, 255, 0.045)),
+    rgba(4, 13, 25, 0.78);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.mdc-gate-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  margin-bottom: 18px;
+  border: 1px solid rgba(26, 213, 229, 0.34);
+  border-radius: var(--radius);
+  background: rgba(26, 213, 229, 0.12);
+  color: var(--cyan-200);
+}
+
+.mdc-gate-kicker {
+  display: block;
+  color: var(--cyan-200);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.mdc-gate h3 {
+  margin: 8px 0 10px;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1.12;
+}
+
+.mdc-gate p {
+  margin: 0;
+  color: var(--steel-300);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.mdc-gate-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid rgba(160, 205, 224, 0.16);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.mdc-gate-preview span {
+  min-width: 0;
+  color: var(--steel-300);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.mdc-gate-preview strong {
+  color: rgba(194, 211, 223, 0.66);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mdc-gate-form {
+  display: grid;
+  gap: 0;
+}
+
+.mdc-unlock-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(73, 228, 183, 0.28);
+  background: rgba(73, 228, 183, 0.1);
+  color: #93f6d6;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
 }
 
 .mdc-loss {
@@ -1761,7 +1857,9 @@ textarea:focus {
   .mdc-card,
   .mdc-factors,
   .mdc-recs,
-  .mdc-loss {
+  .mdc-loss,
+  .mdc-gate,
+  .mdc-unlock-note {
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
@@ -1797,6 +1895,22 @@ textarea:focus {
 
   .mdc-factor-cost {
     margin-left: 0;
+  }
+
+  .mdc-gate {
+    padding: 18px;
+  }
+
+  .mdc-gate h3 {
+    font-size: 24px;
+  }
+
+  .mdc-gate-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .mdc-gate-preview strong {
+    white-space: normal;
   }
 
   .mdc-cta {
